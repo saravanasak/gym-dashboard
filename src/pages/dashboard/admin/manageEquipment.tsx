@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabaseClient';
+import AdminLayout from '../../../components/AdminLayout';
 
 const ManageEquipment = () => {
   const [equipment, setEquipment] = useState<any[]>([]);
@@ -103,132 +105,100 @@ const ManageEquipment = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Manage Equipment</h1>
+    <AdminLayout>
+      <div className="flex-grow p-8 bg-gray-100 min-h-screen font-sans">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Manage Equipment</h1>
 
-      {message && (
-        <div
-          style={{
-            color: message.startsWith("Error") ? "red" : "green",
-            border: "1px solid",
-            borderRadius: "4px",
-            padding: "10px",
-            marginTop: "10px",
-            maxWidth: "300px",
-            textAlign: "center",
-            fontWeight: "bold",
-            backgroundColor: message.startsWith("Error") ? "#ffe6e6" : "#e6ffe6",
-          }}
-        >
-          {message}
-        </div>
-      )}
-
-      {/* Form for adding or editing equipment */}
-      <form onSubmit={editEquipmentId ? handleEditEquipment : handleAddEquipment} style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Equipment Name"
-          value={equipmentName}
-          onChange={(e) => setEquipmentName(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-        <input
-          type="text"
-          placeholder="Equipment Type"
-          value={equipmentType}
-          onChange={(e) => setEquipmentType(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        >
-          <option value="Available">Available</option>
-          <option value="Not available">Not available</option>
-          <option value="Discarded">Discarded</option>
-        </select>
-        <button
-          type="submit"
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontWeight: "bold",
-          }}
-        >
-          {editEquipmentId ? "Update Equipment" : "Add Equipment"}
-        </button>
-      </form>
-
-      {/* Display the list of equipment */}
-      <div style={{ display: "flex", flexWrap: "wrap", marginTop: "20px" }}>
-        {equipment.map((item) => (
+        {message && (
           <div
-            key={item.id}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              padding: "20px",
-              margin: "10px",
-              maxWidth: "400px",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-            }}
+            className={`p-4 rounded-md text-center font-bold mb-6 ${
+              message.startsWith("Error")
+                ? "bg-red-100 text-red-600 border border-red-400"
+                : "bg-green-100 text-green-600 border border-green-400"
+            }`}
           >
-            <p><strong>Equipment Name:</strong> {item.name}</p>
-            <p><strong>Type:</strong> {item.type}</p>
-            <p><strong>Quantity:</strong> {item.quantity}</p>
-            <p><strong>Status:</strong> {item.status}</p>
+            {message}
+          </div>
+        )}
 
-            {/* Edit and Delete buttons */}
-            <button
-              onClick={() => handleEditClick(item)}
-              style={{
-                padding: "8px 15px",
-                marginRight: "10px",
-                cursor: "pointer",
-                backgroundColor: "#4CAF50",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                fontWeight: "bold",
-              }}
+        {/* Form for adding or editing equipment */}
+        <form onSubmit={editEquipmentId ? handleEditEquipment : handleAddEquipment} className="mb-8 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <input
+              type="text"
+              placeholder="Equipment Name"
+              value={equipmentName}
+              onChange={(e) => setEquipmentName(e.target.value)}
+              required
+              className="p-2 border rounded-md w-full"
+            />
+            <input
+              type="text"
+              placeholder="Equipment Type"
+              value={equipmentType}
+              onChange={(e) => setEquipmentType(e.target.value)}
+              required
+              className="p-2 border rounded-md w-full"
+            />
+            <input
+              type="number"
+              placeholder="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              required
+              className="p-2 border rounded-md w-full"
+            />
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              required
+              className="p-2 border rounded-md w-full"
             >
-              Edit
-            </button>
+              <option value="Available">Available</option>
+              <option value="Not available">Not available</option>
+              <option value="Discarded">Discarded</option>
+            </select>
             <button
-              onClick={() => handleDeleteEquipment(item.id)}
-              style={{
-                padding: "8px 15px",
-                cursor: "pointer",
-                backgroundColor: "#ff4d4f",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                fontWeight: "bold",
-              }}
+              type="submit"
+              className="w-full px-4 py-2 bg-green-500 text-white font-bold rounded-md hover:bg-green-600"
             >
-              Delete
+              {editEquipmentId ? "Update Equipment" : "Add Equipment"}
             </button>
           </div>
-        ))}
+        </form>
+
+        {/* Display the list of equipment */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+          {equipment.map((item) => (
+            <div
+              key={item.id}
+              className="border rounded-lg p-6 bg-white shadow-md w-full"
+            >
+              <p className="font-semibold text-lg">Equipment Name: {item.name}</p>
+              <p className="text-gray-600">Type: {item.type}</p>
+              <p className="text-gray-600">Quantity: {item.quantity}</p>
+              <p className="text-gray-600">Status: {item.status}</p>
+
+              {/* Edit and Delete buttons */}
+              <div className="mt-4 flex space-x-4">
+                <button
+                  onClick={() => handleEditClick(item)}
+                  className="w-full px-4 py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteEquipment(item.id)}
+                  className="w-full px-4 py-2 bg-red-500 text-white font-bold rounded-md hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

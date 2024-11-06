@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
+import AdminLayout from '../../../components/AdminLayout';
 
 const PaymentHistory = () => {
   const [payments, setPayments] = useState<any[]>([]);
@@ -11,6 +13,8 @@ const PaymentHistory = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filteredPayments, setFilteredPayments] = useState<any[]>([]);
 
   // Fetch payments, users, and plans from the database
   const fetchPayments = async () => {
@@ -23,7 +27,7 @@ const PaymentHistory = () => {
   };
 
   const fetchUsersAndPlans = async () => {
-    const { data: usersData } = await supabase.from('users').select('*');
+    const { data: usersData } = await supabase.from('users').select('id, name, member_id, mobile_number');
     const { data: plansData } = await supabase.from('plans').select('*');
 
     if (usersData) setUsers(usersData);
@@ -36,28 +40,70 @@ const PaymentHistory = () => {
     fetchUsersAndPlans();
   }, []);
 
+  // Function to calculate expiry date
+  function calculateExpiryDate(durationInMonths: number, paymentDate: string): string {
+    if (!paymentDate) {
+      console.error("Payment date is not provided");
+      return "";
+    }
+    const paymentDateObj = new Date(paymentDate);
+    paymentDateObj.setMonth(paymentDateObj.getMonth() + durationInMonths);
+    return paymentDateObj.toISOString().split('T')[0]; // Format date as YYYY-MM-DD for database
+  }
+
   // Handle adding new payment
   const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Generate a new unique transaction ID
-    const newTransactionId = `PAID${String(payments.length + 1).padStart(2, '0')}`;
+    // Find the selected plan and get its duration
+    const selectedPlan = plans.find(plan => plan.id == planId);
+    if (!selectedPlan) {
+      setMessage("Error: Could not find the selected plan.");
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
 
-    const { error } = await supabase.from('payments').insert([
+    // Calculate the expiry date based on the plan duration
+    const planDuration = parseInt(selectedPlan.duration, 10); // Ensure duration is a number
+    const expiryDate = calculateExpiryDate(planDuration, paymentDate);
+
+    console.log("Calculated Expiry Date: ", expiryDate); // Debugging log for expiry date
+
+    // Fetch the latest transaction ID from all payments to determine the next ID
+    const { data: allPayments, error: fetchError } = await supabase.from('payments').select('transaction_id').order('id', { ascending: false });
+    if (fetchError) {
+      console.error("Error fetching all payments:", fetchError);
+      setMessage("Error: Could not determine the next transaction ID.");
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
+    // Calculate new transaction ID
+    let newTransactionId = 'PAID01';
+    if (allPayments && allPayments.length > 0) {
+      // Extract the numeric part of the highest transaction ID and increment it
+      const lastTransaction = allPayments[0];
+      const lastTransactionNumber = parseInt(lastTransaction.transaction_id.replace('PAID', ''), 10);
+      newTransactionId = `PAID${String(lastTransactionNumber + 1).padStart(2, '0')}`;
+    }
+
+    // Insert new payment
+    const { error: insertError } = await supabase.from('payments').insert([
       {
-        transaction_id: newTransactionId, // Include transaction ID when adding a payment
+        transaction_id: newTransactionId,
         user_id: userId,
         plan_id: planId,
         amount: parseFloat(amount as string),
         date: paymentDate,
+        expiry_date: expiryDate,
       },
     ]);
 
-    if (error) {
-      console.error("Error adding payment:", error);
+    if (insertError) {
+      console.error("Error adding payment:", insertError);
       setMessage("Error: Could not add payment.");
     } else {
-      setMessage("Payment added successfully!");
+      setMessage(`Payment added successfully! Expiry Date: ${expiryDate}`);
       await fetchPayments(); // Refresh payment list after adding
       setUserId('');
       setPlanId('');
@@ -75,169 +121,155 @@ const PaymentHistory = () => {
     setUserId(''); // Reset userId until a user is selected
   };
 
+  // Filter payments based on search input
+  const handlePaymentSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+    if (term) {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .or(`transaction_id.ilike.%${term}%,user_id.in.(${users.filter(user => user.name.toLowerCase().includes(term.toLowerCase())).map(user => user.id)})`);
+      if (!error) {
+        setFilteredPayments(data);
+      }
+    } else {
+      setFilteredPayments([]);
+    }
+  };
+
+  const generateWhatsAppLink = (userName: any, userMobileNumber: any, transactionId: any, amount: any, paymentDate: any) => {
+    const message = `Hello ${userName ?? ''},\n\nHere are your payment details:\nTransaction ID: ${transactionId ?? ''}\nAmount: $${amount ?? ''}\nDate: ${paymentDate ?? ''}`;
+    const encodedMessage = encodeURIComponent(message);
+    return `https://wa.me/${userMobileNumber}?text=${encodedMessage}`;
+  };
+
   return (
-    <div style={{ padding: "20px", fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>Payment History</h1>
+    <AdminLayout>
+      <div className="flex-grow p-8 bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen font-sans">
+        <h1 className="text-4xl font-bold text-gray-800 mb-6">Payment History</h1>
 
-      {message && (
-        <div
-          style={{
-            color: message.startsWith("Error") ? "red" : "green",
-            border: "1px solid",
-            borderRadius: "4px",
-            padding: "10px",
-            marginTop: "10px",
-            maxWidth: "300px",
-            textAlign: "center",
-            fontWeight: "bold",
-            backgroundColor: message.startsWith("Error") ? "#ffe6e6" : "#e6ffe6",
-            margin: 'auto',
-          }}
-        >
-          {message}
-        </div>
-      )}
-
-      {/* Form for adding new payment */}
-      <form onSubmit={handleAddPayment} style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        marginBottom: "40px",
-        backgroundColor: '#f9f9f9',
-        padding: '20px',
-        borderRadius: '10px',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-        maxWidth: '600px',
-        margin: 'auto',
-      }}>
-        <input
-          type="text"
-          placeholder="Search User by Name"
-          onChange={handleUserSearch}
-          style={{
-            marginBottom: "15px",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            width: "100%",
-          }}
-        />
-        
-        <select
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          required
-          style={{
-            marginBottom: "15px",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            width: "100%",
-          }}
-        >
-          <option value="">Select User</option>
-          {filteredUsers.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.name} - {user.member_id}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={planId}
-          onChange={(e) => setPlanId(e.target.value)}
-          required
-          style={{
-            marginBottom: "15px",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            width: "100%",
-          }}
-        >
-          <option value="">Select Plan</option>
-          {plans.map((plan) => (
-            <option key={plan.id} value={plan.id}>
-              {plan.name} - {plan.plan_id}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="number"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-          style={{
-            marginBottom: "15px",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            width: "100%",
-          }}
-        />
-
-        <input
-          type="date"
-          value={paymentDate}
-          onChange={(e) => setPaymentDate(e.target.value)}
-          required
-          style={{
-            marginBottom: "15px",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            width: "100%",
-          }}
-        />
-
-        <button
-          type="submit"
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontWeight: "bold",
-            width: "100%",
-          }}
-        >
-          Add Payment
-        </button>
-      </form>
-
-      {/* Display the list of payments */}
-      <div style={{ marginTop: "20px", maxWidth: "800px", margin: 'auto' }}>
-        {payments.length === 0 ? (
-          <p style={{ textAlign: 'center', fontSize: '18px', color: '#666' }}>No payments available.</p>
-        ) : (
-          payments.map((payment) => (
-            <div
-              key={payment.id}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: "10px",
-                padding: "20px",
-                margin: "20px 0",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                backgroundColor: '#fff',
-              }}
-            >
-              <p style={{ fontSize: '18px', fontWeight: 'bold' }}><strong>Transaction ID:</strong> {payment.transaction_id}</p>
-              <p style={{ fontSize: '18px', fontWeight: 'bold' }}><strong>User Name:</strong> {users.find(user => user.id === payment.user_id)?.name}</p>
-              <p style={{ fontSize: '16px', margin: '5px 0' }}><strong>User Member ID:</strong> {users.find(user => user.id === payment.user_id)?.member_id}</p>
-              <p style={{ fontSize: '16px', margin: '5px 0' }}><strong>Plan ID:</strong> {plans.find(plan => plan.id === payment.plan_id)?.plan_id}</p>
-              <p style={{ fontSize: '16px', margin: '5px 0' }}><strong>Amount:</strong> ${payment.amount}</p>
-              <p style={{ fontSize: '16px', margin: '5px 0' }}><strong>Date:</strong> {payment.date}</p>
-            </div>
-          ))
+        {message && (
+          <div
+            className={`p-4 rounded-md text-center font-bold mb-6 shadow-lg transform transition-all duration-300 ease-in-out ${
+              message.startsWith("Error")
+                ? "bg-red-100 text-red-600 border border-red-400"
+                : "bg-green-100 text-green-600 border border-green-400"
+            }`}
+          >
+            {message}
+          </div>
         )}
+
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Form for adding new payment */}
+          <form onSubmit={handleAddPayment} className="md:w-1/3 space-y-4 bg-white p-8 rounded-lg shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Add Payment</h2>
+            <input
+              type="text"
+              placeholder="Search User by Name"
+              onChange={handleUserSearch}
+              className="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            />
+            
+            <select
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              required
+              className="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            >
+              <option value="">Select User</option>
+              {filteredUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} - {user.member_id}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={planId}
+              onChange={(e) => setPlanId(e.target.value)}
+              required
+              className="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            >
+              <option value="">Select Plan</option>
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} - {plan.plan_id}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+              className="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            />
+
+            <input
+              type="date"
+              value={paymentDate}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              required
+              className="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            />
+
+            <button
+              type="submit"
+              className="px-10 py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 shadow-lg transform hover:scale-105 w-full"
+            >
+              Add Payment
+            </button>
+          </form>
+
+          <div className="md:w-2/3 flex flex-col items-center">
+            {/* Search bar for payments */}
+            <input
+              type="text"
+              placeholder="Search by Transaction ID or User Name"
+              value={searchTerm}
+              onChange={handlePaymentSearch}
+              className="p-3 border rounded-md w-full mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+            />
+
+            {/* Display the latest payment or filtered payments */}
+            <div className="grid grid-cols-1 gap-6 mt-8 overflow-y-auto max-h-[50vh] w-full">
+              {(searchTerm && filteredPayments.length > 0 ? filteredPayments : payments).map((payment) => {
+                const user = users.find(user => user.id === payment.user_id);
+                const userMobileNumber = user?.mobile_number;
+                return (
+                  <div
+                    key={payment.id}
+                    className="border rounded-lg p-6 bg-white shadow-2xl transform transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-105 text-center"
+                  >
+                    <p className="font-semibold text-lg mb-2">Transaction ID: {payment.transaction_id}</p>
+                    <p className="text-base text-gray-600">User Name: {user?.name}</p>
+                    <p className="text-base text-gray-600">User Member ID: {user?.member_id}</p>
+                    <p className="text-base text-gray-600">Plan ID: {plans.find(plan => plan.id === payment.plan_id)?.plan_id}</p>
+                    <p className="text-lg text-blue-600 font-bold">Amount: ${payment.amount}</p>
+                    <p className="text-lg text-blue-600 font-bold">Date: {payment.date}</p>
+                    <p className="text-base text-gray-600">Expiry Date: {payment.expiry_date}</p>
+                    {userMobileNumber && (
+                      <a
+                        href={generateWhatsAppLink(user.name, userMobileNumber, payment.transaction_id, payment.amount, payment.date)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-4 py-2 mt-4 bg-green-500 text-white font-semibold rounded-md shadow-md hover:bg-green-600 transform hover:scale-105"
+                      >
+                        Send via WhatsApp
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

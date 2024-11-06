@@ -1,12 +1,14 @@
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabaseClient';
+import AdminLayout from '../../../components/AdminLayout';
 
 const ManagePlans = () => {
   const [plans, setPlans] = useState<any[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [editPlanId, setEditPlanId] = useState<number | null>(null);
   const [planName, setPlanName] = useState('');
-  const [duration, setDuration] = useState('');
+  const [duration, setDuration] = useState<number | string>('');
   const [price, setPrice] = useState<number | string>('');
   const [status, setStatus] = useState('active');
 
@@ -36,7 +38,7 @@ const ManagePlans = () => {
       {
         plan_id: newPlanId,
         name: planName,
-        duration,
+        duration: parseInt(duration as string),
         price: parseFloat(price as string),
         status,
       },
@@ -78,7 +80,7 @@ const ManagePlans = () => {
 
     const { error } = await supabase
       .from('plans')
-      .update({ name: planName, duration, price: parseFloat(price as string), status })
+      .update({ name: planName, duration: parseInt(duration as string), price: parseFloat(price as string), status })
       .eq('id', editPlanId);
 
     if (error) {
@@ -107,132 +109,109 @@ const ManagePlans = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Manage Plans</h1>
+    <AdminLayout>
+      <div className="flex-grow p-8 bg-gray-100 min-h-screen font-sans">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Manage Plans</h1>
 
-      {message && (
-        <div
-          style={{
-            color: message.startsWith("Error") ? "red" : "green",
-            border: "1px solid",
-            borderRadius: "4px",
-            padding: "10px",
-            marginTop: "10px",
-            maxWidth: "300px",
-            textAlign: "center",
-            fontWeight: "bold",
-            backgroundColor: message.startsWith("Error") ? "#ffe6e6" : "#e6ffe6",
-          }}
-        >
-          {message}
-        </div>
-      )}
-
-      {/* Form for adding or editing plans */}
-      <form onSubmit={editPlanId ? handleEditPlan : handleAddPlan} style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Plan Name"
-          value={planName}
-          onChange={(e) => setPlanName(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-        <input
-          type="text"
-          placeholder="Duration (e.g., 1 Month)"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-        <input
-          type="number"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        />
-       <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          required
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-        >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select> 
-        <button
-          type="submit"
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontWeight: "bold",
-          }}
-        >
-          {editPlanId ? "Update Plan" : "Add Plan"}
-        </button>
-      </form>
-
-      {/* Display the list of plans */}
-      <div style={{ display: "flex", flexWrap: "wrap", marginTop: "20px" }}>
-        {plans.map((plan) => (
+        {message && (
           <div
-            key={plan.id}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              padding: "20px",
-              margin: "10px",
-              maxWidth: "400px",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-            }}
+            className={`p-4 rounded-md text-center font-bold mb-6 ${
+              message.startsWith("Error")
+                ? "bg-red-100 text-red-600 border border-red-400"
+                : "bg-green-100 text-green-600 border border-green-400"
+            }`}
           >
-            <p><strong>Plan ID:</strong> {plan.plan_id}</p>
-            <p><strong>Plan Name:</strong> {plan.name}</p>
-            <p><strong>Duration:</strong> {plan.duration}</p>
-            <p><strong>Price:</strong> ${plan.price}</p>
-            <p><strong>Status:</strong> {plan.status}</p>
+            {message}
+          </div>
+        )}
 
-            {/* Edit and Delete buttons */}
-            <button
-              onClick={() => handleEditClick(plan)}
-              style={{
-                padding: "8px 15px",
-                marginRight: "10px",
-                cursor: "pointer",
-                backgroundColor: "#4CAF50",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                fontWeight: "bold",
-              }}
+        {/* Form for adding or editing plans */}
+        <form onSubmit={editPlanId ? handleEditPlan : handleAddPlan} className="mb-8 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <input
+              type="text"
+              placeholder="Plan Name"
+              value={planName}
+              onChange={(e) => setPlanName(e.target.value)}
+              required
+              className="p-2 border rounded-md w-full"
+            />
+
+            <input
+              type="number"
+              placeholder="Duration in Months"
+              min="1"
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value))}
+              required
+              className="p-2 border rounded-md w-full"
+            />
+
+            <input
+              type="number"
+              placeholder="Price"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+              className="p-2 border rounded-md w-full"
+            />
+
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              required
+              className="p-2 border rounded-md w-full"
             >
-              Edit
-            </button>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
             <button
-              onClick={() => handleDeletePlan(plan.id)}
-              style={{
-                padding: "8px 15px",
-                cursor: "pointer",
-                backgroundColor: "#ff4d4f",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                fontWeight: "bold",
-              }}
+              type="submit"
+              className="w-full px-4 py-2 bg-green-500 text-white font-bold rounded-md hover:bg-green-600"
             >
-              Delete
+              {editPlanId ? "Update Plan" : "Add Plan"}
             </button>
           </div>
-        ))}
+        </form>
+
+        {/* Display the list of plans */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className="border rounded-lg p-6 bg-white shadow-md w-full"
+            >
+              <p className="font-semibold text-lg">Plan ID: {plan.plan_id}</p>
+              <p className="text-gray-600">Plan Name: {plan.name}</p>
+              <p className="text-gray-600">Duration: {plan.duration}</p>
+              <p className="text-gray-600">Price: ${plan.price}</p>
+              <p className="text-gray-600">Status: {plan.status}</p>
+
+              {/* View, Edit, and Delete buttons */}
+              <div className="mt-4 flex space-x-4">
+                <Link href={`/admin/plans/view/${plan.id}`}>
+                  <a className="w-full px-4 py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600 text-center">
+                    View
+                  </a>
+                </Link>
+                <button
+                  onClick={() => handleEditClick(plan)}
+                  className="w-full px-4 py-2 bg-yellow-500 text-white font-bold rounded-md hover:bg-yellow-600"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeletePlan(plan.id)}
+                  className="w-full px-4 py-2 bg-red-500 text-white font-bold rounded-md hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

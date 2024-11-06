@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import bcrypt from 'bcryptjs';
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
+import { Label } from "@/components/label";
 
 const Signup = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
   // Function to generate the next member ID
@@ -38,99 +44,157 @@ const Signup = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check if username already exists
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('*')
-      .eq('name', username.toLowerCase())
-      .single();
+    try {
+      // Check if username, email, or mobile number already exists
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from('users')
+        .select('*')
+        .or(
+          `name.eq.${username.toLowerCase()},email.eq.${email.toLowerCase()},mobile_number.eq.${mobileNumber}`
+        );
 
-    if (existingUser) {
-      setMessage("Error: Username already exists. Please choose a different username.");
-      setTimeout(() => setMessage(null), 3000);
-      return;
-    }
+      if (existingUserError) {
+        throw existingUserError;
+      }
 
-    // Hash the password before storing it
-    const hashedPassword = await bcrypt.hash(password, 10);
+      if (existingUser && existingUser.length > 0) {
+        setMessage(
+          "Error: Username, email, or mobile number already exists. Please choose a different one."
+        );
+        setTimeout(() => setMessage(null), 3000);
+        return;
+      }
 
-    // Generate a unique member ID
-    const memberID = await generateMemberID();
+      // Hash the password before storing it
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user with default role 'customer' and status 'active'
-    const { error } = await supabase.from('users').insert([
-      {
-        name: username.toLowerCase(),
-        password: hashedPassword,
-        role: 'customer', // Default role as 'customer'
-        status: 'active', // Default status as 'active'
-        member_id: memberID, // Unique member ID
-      },
-    ]);
+      // Generate a unique member ID
+      const memberID = await generateMemberID();
 
-    if (error) {
+      // Insert new user with default role 'customer' and status 'active'
+      const { error } = await supabase.from('users').insert([
+        {
+          name: username.toLowerCase(),
+          password: hashedPassword,
+          role: 'customer', // Default role as 'customer'
+          status: 'active', // Default status as 'active'
+          member_id: memberID, // Unique member ID
+          mobile_number: mobileNumber,
+          email: email.toLowerCase(),
+          address: address,
+        },
+      ]);
+
+      if (error) {
+        throw error;
+      } else {
+        setMessage("User created successfully! You can now log in.");
+      }
+    } catch (error) {
       console.error("Error creating user:", error);
       setMessage("Error: Could not create user.");
-    } else {
-      setMessage("User created successfully! You can now log in.");
     }
 
     setTimeout(() => setMessage(null), 3000);
   };
 
   return (
-    <div>
-      <h1>Signup</h1>
-
-      {message && (
-        <div
-          style={{
-            color: message.startsWith("Error") ? "red" : "green",
-            border: "1px solid",
-            borderRadius: "4px",
-            padding: "10px",
-            marginTop: "10px",
-            maxWidth: "300px",
-            textAlign: "center",
-            fontWeight: "bold",
-            backgroundColor: message.startsWith("Error") ? "#ffe6e6" : "#e6ffe6",
-          }}
-        >
-          {message}
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <div className="w-24 h-24 mx-auto bg-gradient-to-r from-yellow-600 to-yellow-400 rounded-full flex items-center justify-center shadow-lg">
+            {/* Placeholder for an icon or logo */}
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+            Sign Up for Ironman Fitness Studio
+          </h2>
         </div>
-      )}
-
-      {/* Form for user signup */}
-      <form onSubmit={handleSignup}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          style={{
-            padding: "10px 20px",
-            marginTop: "10px",
-            cursor: "pointer",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-          }}
-        >
-          Sign Up
-        </button>
-      </form>
+        <form onSubmit={handleSignup} className="mt-8 space-y-6">
+          {message && (
+            <div className="mb-4 p-3 text-center font-bold rounded-md text-red-700 bg-red-100">
+              {message}
+            </div>
+          )}
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <Label htmlFor="username" className="sr-only">
+                Username
+              </Label>
+              <Input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 rounded-t-md focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm"
+                placeholder="Username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="password" className="sr-only">
+                Password
+              </Label>
+              <Input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+              />
+            </div>
+            <div>
+              <Label htmlFor="mobileNumber" className="sr-only">
+                Mobile Number
+              </Label>
+              <Input
+                type="text"
+                id="mobileNumber"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm"
+                placeholder="Mobile Number"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email" className="sr-only">
+                Email
+              </Label>
+              <Input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm"
+                placeholder="Email"
+              />
+            </div>
+            <div>
+              <Label htmlFor="address" className="sr-only">
+                Address
+              </Label>
+              <textarea
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 focus:z-10 sm:text-sm"
+                placeholder="Address"
+              ></textarea>
+            </div>
+          </div>
+          <div>
+            <Button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+            >
+              Sign Up
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
