@@ -167,35 +167,45 @@ const ManageEquipment = () => {
           </div>
         </form>
 
-        {/* Display the list of equipment */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-          {equipment.map((item) => (
-            <div
-              key={item.id}
-              className="border rounded-lg p-6 bg-white shadow-md w-full"
-            >
-              <p className="font-semibold text-lg">Equipment Name: {item.name}</p>
-              <p className="text-gray-600">Type: {item.type}</p>
-              <p className="text-gray-600">Quantity: {item.quantity}</p>
-              <p className="text-gray-600">Status: {item.status}</p>
-
-              {/* Edit and Delete buttons */}
-              <div className="mt-4 flex space-x-4">
-                <button
-                  onClick={() => handleEditClick(item)}
-                  className="w-full px-4 py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteEquipment(item.id)}
-                  className="w-full px-4 py-2 bg-red-500 text-white font-bold rounded-md hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* Display the list of equipment in table form */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border rounded-lg shadow-md">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Equipment Name</th>
+                <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Type</th>
+                <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Quantity</th>
+                <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Status</th>
+                <th className="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {equipment.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-100">
+                  <td className="py-3 px-4 border-b text-sm text-gray-800">{item.name}</td>
+                  <td className="py-3 px-4 border-b text-sm text-gray-800">{item.type}</td>
+                  <td className="py-3 px-4 border-b text-sm text-gray-800">{item.quantity}</td>
+                  <td className="py-3 px-4 border-b text-sm text-gray-800">{item.status}</td>
+                  <td className="py-3 px-4 border-b text-sm text-gray-800">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditClick(item)}
+                        className="px-4 py-1 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEquipment(item.id)}
+                        className="px-4 py-1 bg-red-500 text-white font-bold rounded-md hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </AdminLayout>

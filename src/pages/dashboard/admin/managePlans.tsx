@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabaseClient';
 import AdminLayout from '../../../components/AdminLayout';
@@ -16,7 +15,7 @@ const ManagePlans = () => {
   const fetchPlans = async () => {
     const { data, error } = await supabase.from('plans').select('*');
     if (error) {
-      console.error("Error fetching plans:", error);
+      console.error('Error fetching plans:', error);
     } else {
       setPlans(data);
     }
@@ -45,10 +44,10 @@ const ManagePlans = () => {
     ]);
 
     if (error) {
-      console.error("Error adding plan:", error);
-      setMessage("Error: Could not add plan.");
+      console.error('Error adding plan:', error);
+      setMessage('Error: Could not add plan.');
     } else {
-      setMessage("Plan added successfully!");
+      setMessage('Plan added successfully!');
       await fetchPlans(); // Refresh plan list after adding
       setPlanName('');
       setDuration('');
@@ -64,10 +63,10 @@ const ManagePlans = () => {
     const { error } = await supabase.from('plans').delete().eq('id', planId);
 
     if (error) {
-      console.error("Error deleting plan:", error);
-      setMessage("Error: Could not delete plan.");
+      console.error('Error deleting plan:', error);
+      setMessage('Error: Could not delete plan.');
     } else {
-      setMessage("Plan deleted successfully!");
+      setMessage('Plan deleted successfully!');
       await fetchPlans(); // Refresh plan list after deleting
     }
 
@@ -84,10 +83,10 @@ const ManagePlans = () => {
       .eq('id', editPlanId);
 
     if (error) {
-      console.error("Error updating plan:", error);
-      setMessage("Error: Could not update plan.");
+      console.error('Error updating plan:', error);
+      setMessage('Error: Could not update plan.');
     } else {
-      setMessage("Plan updated successfully!");
+      setMessage('Plan updated successfully!');
       await fetchPlans(); // Refresh plan list after editing
       setEditPlanId(null);
       setPlanName('');
@@ -116,9 +115,9 @@ const ManagePlans = () => {
         {message && (
           <div
             className={`p-4 rounded-md text-center font-bold mb-6 ${
-              message.startsWith("Error")
-                ? "bg-red-100 text-red-600 border border-red-400"
-                : "bg-green-100 text-green-600 border border-green-400"
+              message.startsWith('Error')
+                ? 'bg-red-100 text-red-600 border border-red-400'
+                : 'bg-green-100 text-green-600 border border-green-400'
             }`}
           >
             {message}
@@ -169,46 +168,52 @@ const ManagePlans = () => {
               type="submit"
               className="w-full px-4 py-2 bg-green-500 text-white font-bold rounded-md hover:bg-green-600"
             >
-              {editPlanId ? "Update Plan" : "Add Plan"}
+              {editPlanId ? 'Update Plan' : 'Add Plan'}
             </button>
           </div>
         </form>
 
-        {/* Display the list of plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className="border rounded-lg p-6 bg-white shadow-md w-full"
-            >
-              <p className="font-semibold text-lg">Plan ID: {plan.plan_id}</p>
-              <p className="text-gray-600">Plan Name: {plan.name}</p>
-              <p className="text-gray-600">Duration: {plan.duration}</p>
-              <p className="text-gray-600">Price: ${plan.price}</p>
-              <p className="text-gray-600">Status: {plan.status}</p>
-
-              {/* View, Edit, and Delete buttons */}
-              <div className="mt-4 flex space-x-4">
-                <Link href={`/admin/plans/view/${plan.id}`}>
-                  <a className="w-full px-4 py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600 text-center">
-                    View
-                  </a>
-                </Link>
-                <button
-                  onClick={() => handleEditClick(plan)}
-                  className="w-full px-4 py-2 bg-yellow-500 text-white font-bold rounded-md hover:bg-yellow-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeletePlan(plan.id)}
-                  className="w-full px-4 py-2 bg-red-500 text-white font-bold rounded-md hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* Display the list of plans as a table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border rounded-lg shadow-lg">
+            <thead>
+              <tr className="bg-blue-500 text-white">
+                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Plan ID</th>
+                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Plan Name</th>
+                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Duration (Months)</th>
+                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Price ($)</th>
+                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Status</th>
+                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plans.map((plan, index) => (
+                <tr key={plan.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                  <td className="py-4 px-6 border-b text-base text-gray-800">{plan.plan_id}</td>
+                  <td className="py-4 px-6 border-b text-base text-gray-800">{plan.name}</td>
+                  <td className="py-4 px-6 border-b text-base text-gray-800">{plan.duration}</td>
+                  <td className="py-4 px-6 border-b text-base text-gray-800">${plan.price}</td>
+                  <td className="py-4 px-6 border-b text-base text-gray-800">{plan.status}</td>
+                  <td className="py-4 px-6 border-b text-base text-gray-800">
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => handleEditClick(plan)}
+                        className="px-5 py-2 bg-yellow-500 text-white font-bold rounded-md hover:bg-yellow-600 shadow-lg"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeletePlan(plan.id)}
+                        className="px-5 py-2 bg-red-500 text-white font-bold rounded-md hover:bg-red-600 shadow-lg"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </AdminLayout>

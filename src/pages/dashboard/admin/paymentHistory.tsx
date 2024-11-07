@@ -138,8 +138,8 @@ const PaymentHistory = () => {
     }
   };
 
-  const generateWhatsAppLink = (userName: any, userMobileNumber: any, transactionId: any, amount: any, paymentDate: any) => {
-    const message = `Hello ${userName ?? ''},\n\nHere are your payment details:\nTransaction ID: ${transactionId ?? ''}\nAmount: $${amount ?? ''}\nDate: ${paymentDate ?? ''}`;
+  const generateWhatsAppLink = (userName: any, userMobileNumber: any, transactionId: any, amount: any, paymentDate: any, expiryDate: any) => {
+    const message = `Hello ${userName ?? ''},\n\nThank you for visiting Iornman Fitness Studio.\n\nHere are your payment details:\nTransaction ID: ${transactionId ?? ''}\nAmount: ₹${amount ?? ''}\nDate: ${paymentDate ?? ''}\nExpiry Date: ${expiryDate ?? ''}\n\nFeel free to contact us if you have any questions.`;
     const encodedMessage = encodeURIComponent(message);
     return `https://wa.me/${userMobileNumber}?text=${encodedMessage}`;
   };
@@ -249,12 +249,12 @@ const PaymentHistory = () => {
                     <p className="text-base text-gray-600">User Name: {user?.name}</p>
                     <p className="text-base text-gray-600">User Member ID: {user?.member_id}</p>
                     <p className="text-base text-gray-600">Plan ID: {plans.find(plan => plan.id === payment.plan_id)?.plan_id}</p>
-                    <p className="text-lg text-blue-600 font-bold">Amount: ${payment.amount}</p>
+                    <p className="text-lg text-blue-600 font-bold">Amount: ₹{payment.amount}</p>
                     <p className="text-lg text-blue-600 font-bold">Date: {payment.date}</p>
                     <p className="text-base text-gray-600">Expiry Date: {payment.expiry_date}</p>
                     {userMobileNumber && (
                       <a
-                        href={generateWhatsAppLink(user.name, userMobileNumber, payment.transaction_id, payment.amount, payment.date)}
+                        href={generateWhatsAppLink(user.name, userMobileNumber, payment.transaction_id, payment.amount, payment.date, payment.expiry_date)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center px-4 py-2 mt-4 bg-green-500 text-white font-semibold rounded-md shadow-md hover:bg-green-600 transform hover:scale-105"
