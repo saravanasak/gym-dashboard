@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
-import { FaHome, FaUsers, FaClipboardList, FaDumbbell, FaChartBar, FaMoneyBillWave, FaSignOutAlt, FaBell, FaFileImport } from 'react-icons/fa';
+import { FaHome, FaUsers, FaClipboardList, FaDumbbell, FaChartBar, FaMoneyBillWave, FaSignOutAlt, FaBell, FaFileImport, FaFileExport } from 'react-icons/fa';
 import { MdMenu, MdClose } from 'react-icons/md';
 import Image from 'next/image';
 
@@ -85,7 +85,7 @@ const AdminLayout = ({ children }) => {
           <li className="flex items-center space-x-3 cursor-pointer hover:bg-gray-700 p-2 rounded-md transition-all">
             <Link href="/dashboard/admin/export" legacyBehavior>
               <a className="flex items-center space-x-3 text-base hover:text-yellow-500">
-                <FaFileImport size={20} />
+                <FaFileExport size={21} />
                 {isMenuExpanded && <span>Export</span>}
               </a>
             </Link>
