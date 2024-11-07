@@ -181,7 +181,7 @@ const ManagePlans = () => {
                 <th className="py-4 px-6 border-b text-left text-lg font-semibold">Plan ID</th>
                 <th className="py-4 px-6 border-b text-left text-lg font-semibold">Plan Name</th>
                 <th className="py-4 px-6 border-b text-left text-lg font-semibold">Duration (Months)</th>
-                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Price ($)</th>
+                <th className="py-4 px-6 border-b text-left text-lg font-semibold">Price (₹)</th>
                 <th className="py-4 px-6 border-b text-left text-lg font-semibold">Status</th>
                 <th className="py-4 px-6 border-b text-left text-lg font-semibold">Actions</th>
               </tr>
@@ -192,7 +192,7 @@ const ManagePlans = () => {
                   <td className="py-4 px-6 border-b text-base text-gray-800">{plan.plan_id}</td>
                   <td className="py-4 px-6 border-b text-base text-gray-800">{plan.name}</td>
                   <td className="py-4 px-6 border-b text-base text-gray-800">{plan.duration}</td>
-                  <td className="py-4 px-6 border-b text-base text-gray-800">${plan.price}</td>
+                  <td className="py-4 px-6 border-b text-base text-gray-800">₹{plan.price}</td>
                   <td className="py-4 px-6 border-b text-base text-gray-800">{plan.status}</td>
                   <td className="py-4 px-6 border-b text-base text-gray-800">
                     <div className="flex space-x-3">
