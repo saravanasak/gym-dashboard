@@ -1,6 +1,5 @@
 // src/pages/dashboard/admin/importUsers.tsx
 import { useState, useRef } from 'react';
-import * as XLSX from 'xlsx';
 import { supabase } from '../../../../lib/supabaseClient';
 import AdminLayout from '../../../components/AdminLayout';
 import { Button } from '@/components/button';
@@ -17,11 +16,15 @@ const ImportUsers = () => {
 
     const reader = new FileReader();
     reader.onload = async (event) => {
-      const data = new Uint8Array(event.target?.result as ArrayBuffer);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      const data = event.target?.result as string;
+      const rows = data.split('\n').map((row) => row.split(','));
+      const keys = rows[0];
+      const jsonData = rows.slice(1).map((row) => {
+        return row.reduce((acc, value, index) => {
+          acc[keys[index]] = value;
+          return acc;
+        }, {} as Record<string, string>);
+      });
 
       let successCount = 0;
       let failedCount = 0;
@@ -33,32 +36,32 @@ const ImportUsers = () => {
           }
           const hashedPassword = await bcrypt.hash('defaultPassword123', 10);
           const userWithDefaults = {
-            name: (user as any).name,
-            email: (user as any).email,
-            mobile_number: (user as any).mobile_number,
-            address: (user as any).address,
-            role: (user as any).role || 'customer',
+            name: user.name,
+            email: user.email,
+            mobile_number: user.mobile_number,
+            address: user.address,
+            role: user.role || 'customer',
             password: hashedPassword,
-            status: (user as any).status || 'active',
+            status: user.status || 'active',
             member_id: await generateMemberID(),
           };
           const { error } = await supabase.from('users').insert(userWithDefaults);
           if (error) {
             failedCount++;
-            setMessage((prevMessage) => `${prevMessage ? prevMessage + '\n' : ''}Failed to import user: ${(user as any).name}`);
+            setMessage((prevMessage) => `${prevMessage ? prevMessage + '\n' : ''}Failed to import user: ${user.name}`);
           } else {
             successCount++;
-            setMessage((prevMessage) => `${prevMessage ? prevMessage + '\n' : ''}Successfully imported user: ${(user as any).name}`);
+            setMessage((prevMessage) => `${prevMessage ? prevMessage + '\n' : ''}Successfully imported user: ${user.name}`);
           }
         } catch (err) {
           failedCount++;
-          setMessage((prevMessage) => `${prevMessage ? prevMessage + '\n' : ''}Error importing user: ${(user as any).name}`);
+          setMessage((prevMessage) => `${prevMessage ? prevMessage + '\n' : ''}Error importing user: ${user.name}`);
         }
       }
 
       setImportResult({ success: successCount, failed: failedCount });
     };
-    reader.readAsArrayBuffer(file);
+    reader.readAsText(file);
   };
 
   const generateMemberID = async () => {
@@ -93,7 +96,7 @@ const ImportUsers = () => {
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Import Users</h1>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <p className="mb-4 text-lg text-gray-700">
-            To import users in bulk, please upload an Excel file (.xlsx or .xls) with the following format. Ensure all columns are filled correctly:
+            To import users in bulk, please upload a CSV file (.csv) with the following format. Ensure all columns are filled correctly:
           </p>
           <ul className="list-disc list-inside mb-6 text-gray-600">
             <li><strong>name</strong>: Username of the user (e.g., john_doe)</li>
@@ -104,7 +107,7 @@ const ImportUsers = () => {
             <li><strong>status</strong>: Status of the user (default: active)</li>
           </ul>
           <p className="mb-4 text-sm text-gray-600">
-            <strong>Example Excel Format:</strong>
+            <strong>Example CSV Format:</strong>
           </p>
           <table className="mb-6 w-full text-sm text-left text-gray-600 border-collapse">
             <thead>
@@ -128,7 +131,7 @@ const ImportUsers = () => {
               </tr>
             </tbody>
           </table>
-          <input ref={fileInputRef} type="file" accept=".xlsx, .xls" className="hidden" />
+          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" />
           <Button
             className="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
             onClick={() => fileInputRef.current?.click()}

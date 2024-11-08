@@ -3,7 +3,6 @@ import AdminLayout from '../../../components/AdminLayout';
 import { Button } from '@/components/button';
 import { supabase } from '../../../../lib/supabaseClient';
 import { useState } from 'react';
-import { saveAs } from 'file-saver';
 
 const ExportData = () => {
   const [message, setMessage] = useState<string | null>(null);
@@ -22,7 +21,12 @@ const ExportData = () => {
       if (data) {
         const csvContent = convertToCSV(data);
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        saveAs(blob, `${tableName}.csv`);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${tableName}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
         setMessage(`Data from ${tableName} exported successfully.`);
       }
     } catch (err) {
